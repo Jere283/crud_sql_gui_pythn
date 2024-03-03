@@ -54,12 +54,12 @@ def update_data(table_name, colum_names, insert_values, db_cursor):
 
 def delete_data(table_name: str, del_id, db_cursor):
     sql_query =f"DELETE FROM {table_name} WHERE ID={del_id}"
-    cursor.execute(sql_query)
-    cursor.commit()
+    db_cursor.execute(sql_query)
+    db_cursor.commit()
 
 
-def get_all_data(table_name, db_cursor):
-    sql_query = f"SELECT * FROM {table_name}"
+def get_all_data(database_name, db_cursor):
+    sql_query = f"SELECT * FROM {database_name}"
 
     db_cursor.execute(sql_query)
 
@@ -68,17 +68,31 @@ def get_all_data(table_name, db_cursor):
     return rows
 
 
-print("Start")
-cursor = connect(connectionString)
+def get_all_tables(db_cursor):
+    sql_query= """
+        SELECT name
+        FROM sys.tables;
+    """
 
-columns = ["Id INTEGER PRIMARY KEY", "Codigo VARCHAR(10) NOT NULL UNIQUE", "Nombre VARCHAR(200) NOT NULL UNIQUE"]
+    db_cursor.execute(sql_query)
+    rows = db_cursor.fetchall()
 
-columns2 = ["Id", "Codigo", "Nombre"]
-values = [2, "Man", "Mantenimiento"]
+    table_names = [row[0] for row in rows]
+
+    return table_names
+
+
+def delete_database(table_name, db_cursor):
+    sql_query = f"DROP TABLE {table_name}"
+    db_cursor.execute(sql_query)
+    db_cursor.commit()
+
 
 if __name__ == "__main__":
     print("Start")
-    cursor = connect(connectionString)
+    con= connect(connectionString)
+
+    cursor = con.cursor()
 
     columns = ["Id INTEGER PRIMARY KEY", "Codigo VARCHAR(10) NOT NULL UNIQUE", "Nombre VARCHAR(200) NOT NULL UNIQUE"]
 
@@ -87,5 +101,8 @@ if __name__ == "__main__":
 
     table_countries = ["ID INT PRIMARY KEY IDENTITY(1,1)","ISO3 VARCHAR(5)", "CountryName VARCHAR(50)", "Capital VARCHAR(50)", "CurrencyCode VARCHAR(30)"]
 
-    create_table("countries", table_countries, cursor)
-    print(connectionString)
+    rows = get_all_tables(cursor)
+
+    for row in rows:
+        print(row)
+

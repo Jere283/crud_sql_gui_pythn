@@ -7,7 +7,7 @@ import sql
 
 root = Tk()
 root.title("Registro de empleados")
-root.geometry("800x350")
+root.geometry("640x350")
 
 # Variables de la tabla
 id_t = StringVar()
@@ -59,6 +59,7 @@ def insertar_dato():
 
 # Mostrar registros
 def mostrar():
+    global b_mostar
     registros = tree.get_children()
 
     for elemento in registros:
@@ -69,6 +70,7 @@ def mostrar():
         for row in rows:
             tree.insert("", 0, text=row[0], values=(row[1], row[2], row[3]))
         print("registros mostrados")
+        b_mostar.destroy()
     except pyodbc.Error as e:
         print("Error al mostrar registros:", e)
 
@@ -80,6 +82,8 @@ def actualizar():
         datos = nombre.get(), cargo.get(), salario.get(), id_t.get()
         sql.update_data("empleados", nombre_columnas, datos, miCursor)
         messagebox.showinfo("Exito", "Registro actualizado exitosamente")
+
+        limpiarCampos()
         mostrar()
     except pyodbc.Error as e:
         messagebox.showwarning("Error", f"Ocurrió un error al actualizar el registro: {e}")
@@ -90,6 +94,8 @@ def eliminar():
     try:
         if messagebox.askyesno(message="¿Realmente desea eliminar el registro?", title="ADVERTENCIA"):
             sql.delete_data("empleados", id_t.get(), miCursor)
+        else:
+            limpiarCampos()
     except pyodbc.Error as e:
         messagebox.showwarning("ADVERTENCIA", "Ocurrió un error al tratar de eliminar el registro")
         print(e)
@@ -103,7 +109,7 @@ def eliminar():
 # Eliminar toda la base de datos
 def eliminar_bd():
     if messagebox.askyesno(message="Los datos se perderán definitivamente, ¿desea continuar?", title="Advertencia"):
-        miCursor.execute("DROP TABLE empleados")
+        sql.delete_database("empleados", miCursor)
     else:
         pass
 
@@ -115,17 +121,46 @@ def salir_aplicacion():
 
 
 def limpiarCampos():
+    global b_crear, b_mostar, b_modificar, b_no_modficar, b_eliminar
     id_t.set("")
     nombre.set("")
     cargo.set("")
     salario.set("")
 
+    b_eliminar.destroy()
+    b_modificar.destroy()
+    b_no_modficar.destroy()
+
+    b_crear = Button(root, text="Crear Registro", command=insertar_dato)
+    b_crear.place(x=50, y=90)
+
+
+def Instrucciones():
+    instrucciones = """
+        Crear un nuevo empleado: Llena todos los campos con 
+        la informacion del nuevo empleado.   
+        
+        Mostar empleados: Click en el boton mostrar empleados 
+        y se desplegara una lista con todos los empelados.
+        
+        Modficar empleado: Doble Click en el empleado que 
+        desaeas modficar, luego modifica los campos que deseas 
+        cambiar y dale click a modificar registro o dale click
+        en no modificar para limpiar los campos.
+        
+        Eliminar empleado : Doble Click en el empleado que 
+        deseas eliminar, dar click en elboton de eliminar 
+        y aceptar en la advertencia.
+         
+    """
+
+    messagebox.showinfo(title="INSTRUCCIONES", message=instrucciones)
 
 def AcercaDe():
     acerca = """
-    Aplicacion CRUD SQL
+    Aplicacion CRUD empleados SQL
     Version 1.0.0
-    Tecnologia Python Tkinter
+    Tecnologias: Python, Tkinter, Pyodbc
     """
     messagebox.showinfo(title="INFORMACION", message=acerca)
 
@@ -140,9 +175,10 @@ menubasedat.add_command(label="Salir", command=salir_aplicacion)
 menubar.add_cascade(label="Inicio", menu=menubasedat)
 
 ayudamenu = Menu(menubar, tearoff=0)
-ayudamenu.add_command(label="Resetear Campos", command=limpiarCampos)
+ayudamenu.add_command(label="Instrucciones", command=Instrucciones)
 ayudamenu.add_command(label="Acerca", command=AcercaDe)
 menubar.add_cascade(label="Ayuda", menu=ayudamenu)
+
 
 # =======================Tabla=======================
 tree = ttk.Treeview(height=10, columns=('#0', '#1', '#2'))
@@ -171,40 +207,55 @@ tree.bind("<Double-1>", seleccionarUsandoClick)
 e1 = Entry(root, textvariable=id_t)
 
 l2 = Label(root, text="Nombre")
-l2.place(x=50, y=40)
+l2.place(x=50, y=10)
 e2 = Entry(root, textvariable=nombre, width=50)
-e2.place(x=100, y=40)
+e2.place(x=100, y=10)
 
 l3 = Label(root, text="Cargo")
-l3.place(x=50, y=70)
+l3.place(x=50, y=40)
 e3 = Entry(root, textvariable=cargo)
-e3.place(x=100, y=70)
+e3.place(x=100, y=40)
 
 l4 = Label(root, text="Salario")
-l4.place(x=280, y=70)
+l4.place(x=280, y=40)
 e4 = Entry(root, textvariable=salario, width=10)
-e4.place(x=320, y=70)
+e4.place(x=320, y=40)
 
 l5 = Label(root, text="USD")
-l5.place(x=380, y=70)
+l5.place(x=380, y=40)
 
 # =======================Botones============================
-b1 = Button(root, text="Crear Registro", command=insertar_dato)
-b1.place(x=50, y=90)
-b2 = Button(root, text="Modificar Registro", command=actualizar)
-b2.place(x=180, y=90)
-b3 = Button(root, text="Mostrar Lista", command=mostrar)
-b3.place(x=320, y=90)
-b4 = Button(root, text="Eliminar Registro", bg="red", command=eliminar)
-b4.place(x=450, y=90)
+b_crear = Button(root, text="Crear Registro", command=insertar_dato)
+b_crear.place(x=50, y=90)
+b_mostar = Button(root, text="Mostrar Empleados", command=mostrar)
+b_mostar.place(x=180, y=90)
 
+b_eliminar = Button(root, text="Eliminar Registro", bg="red", command=eliminar)
+
+b_modificar = Button(root, text="Modificar Registro", command=actualizar)
+
+b_no_modficar = Button(root, text="No Modificar", command=limpiarCampos)
 
 def seleccionarUsandoClick(event):
+    global b_crear, b_mostar, b_modificar, b_no_modficar, b_eliminar
     item = tree.identify('item', event.x, event.y)
     id_t.set(tree.item(item, "text"))
     nombre.set(tree.item(item, "values")[0])
     cargo.set(tree.item(item, "values")[1])
     salario.set(tree.item(item, "values")[2])
+
+    b_mostar.destroy()
+    b_crear.destroy()
+
+    b_modificar = Button(root, text="Modificar Registro", command=actualizar)
+    b_modificar.place(x=50, y=90)
+
+    b_no_modficar = Button(root, text="No Modificar", command=limpiarCampos)
+    b_no_modficar.place(x=180, y=90)
+
+    b_eliminar = Button(root, text="Eliminar Registro", bg="red", command=eliminar)
+    b_eliminar.place(x=320, y=90)
+
 
 
 tree.bind("<Double-1>", seleccionarUsandoClick)
