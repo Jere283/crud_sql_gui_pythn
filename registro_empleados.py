@@ -19,6 +19,7 @@ server = config('SERVER')
 database = config('DATABASE')
 username = config("USER")
 password = config("PASSWORD")
+
 connectionString = f'DRIVER={{ODBC Driver 18 for SQL Server}};SERVER={server};DATABASE={database};' \
                    f'UID={username};PWD={password};Encrypt=yes;TrustServerCertificate=yes;'
 try:
@@ -28,14 +29,24 @@ except pyodbc.Error as e:
     print("error connectandose a la base de datos")
 
 
+def tabla_existe(tabla, cursor):
+    cursor.execute(f"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '{tabla}'")
+    if cursor.fetchone()[0] == 1:
+        return True
+    else:
+        return False
+
+
 def crear_tabla():
     columnas_tablas = ["ID INT PRIMARY KEY IDENTITY(1,1)", "NOMBRE VARCHAR(50) NOT NULL", "CARGO VARCHAR(50) NOT NULL",
                        "SALARIO INT NOT NULL"]
 
     try:
-        # Crear la tabla solo si no existe
-        sql.create_table("empleados", columnas_tablas, miCursor)
-        messagebox.showinfo("Conexion", "Tabla creada exitosamente")
+        if not tabla_existe("empleados", miCursor):
+            sql.create_table("empleados", columnas_tablas, miCursor)
+            messagebox.showinfo("Conexion", "Tabla creada exitosamente")
+        else:
+            messagebox.showinfo("Conexion", "La tabla ya existe")
 
     except pyodbc.Error as e:
         messagebox.showerror("Error", f"Error al crear la base de datos o tabla: {e}")
@@ -49,6 +60,7 @@ def insertar_dato():
     try:
         datos = nombre.get(), cargo.get(), salario.get()
         sql.insert_data("empleados", nombre_columnas, datos, miCursor)
+
         messagebox.showinfo("Exito", "Registro creado exitosamente")
     except pyodbc.Error as e:
         messagebox.showwarning("Error", f"Ocurrió un error al crear el registro: {e}")
@@ -110,6 +122,8 @@ def eliminar():
 def eliminar_bd():
     if messagebox.askyesno(message="Los datos se perderán definitivamente, ¿desea continuar?", title="Advertencia"):
         sql.delete_database("empleados", miCursor)
+        messagebox.showinfo("Conexion", "Tabla borrada exitosamente")
+        mostrar()
     else:
         pass
 
@@ -139,22 +153,23 @@ def Instrucciones():
     instrucciones = """
         Crear un nuevo empleado: Llena todos los campos con 
         la informacion del nuevo empleado.   
-        
+
         Mostar empleados: Click en el boton mostrar empleados 
         y se desplegara una lista con todos los empelados.
-        
+
         Modficar empleado: Doble Click en el empleado que 
         desaeas modficar, luego modifica los campos que deseas 
         cambiar y dale click a modificar registro o dale click
         en no modificar para limpiar los campos.
-        
+
         Eliminar empleado : Doble Click en el empleado que 
         deseas eliminar, dar click en elboton de eliminar 
         y aceptar en la advertencia.
-         
+
     """
 
     messagebox.showinfo(title="INSTRUCCIONES", message=instrucciones)
+
 
 def AcercaDe():
     acerca = """
@@ -170,7 +185,7 @@ def AcercaDe():
 menubar = Menu(root)
 menubasedat = Menu(menubar, tearoff=0)
 menubasedat.add_command(label="Crear tabla de empleados", command=crear_tabla)
-menubasedat.add_command(label="Eliminar Base de Datos", command=eliminar_bd)
+menubasedat.add_command(label="Eliminar tabla de empleados", command=eliminar_bd)
 menubasedat.add_command(label="Salir", command=salir_aplicacion)
 menubar.add_cascade(label="Inicio", menu=menubasedat)
 
@@ -178,7 +193,6 @@ ayudamenu = Menu(menubar, tearoff=0)
 ayudamenu.add_command(label="Instrucciones", command=Instrucciones)
 ayudamenu.add_command(label="Acerca", command=AcercaDe)
 menubar.add_cascade(label="Ayuda", menu=ayudamenu)
-
 
 # =======================Tabla=======================
 tree = ttk.Treeview(height=10, columns=('#0', '#1', '#2'))
@@ -236,6 +250,7 @@ b_modificar = Button(root, text="Modificar Registro", command=actualizar)
 
 b_no_modficar = Button(root, text="No Modificar", command=limpiarCampos)
 
+
 def seleccionarUsandoClick(event):
     global b_crear, b_mostar, b_modificar, b_no_modficar, b_eliminar
     item = tree.identify('item', event.x, event.y)
@@ -255,7 +270,6 @@ def seleccionarUsandoClick(event):
 
     b_eliminar = Button(root, text="Eliminar Registro", bg="red", command=eliminar)
     b_eliminar.place(x=320, y=90)
-
 
 
 tree.bind("<Double-1>", seleccionarUsandoClick)
